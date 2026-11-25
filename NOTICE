@@ -1,0 +1,34 @@
+Lumen hostdesk
+Copyright 2026 Paul Pasaurek
+
+The source code in this repository is licensed under MIT (see the
+LICENSE file). That licence covers the code only.
+
+The names "Luminare Development" and "Luminare", the Luminare logo and mark,
+the name and logo of this project, the README header images, the social
+preview image and all files in docs/brand/, as well as the screenshots in
+docs/screenshots/, are not licensed under MIT or under any other licence in
+this repository. No permission is granted to use them, except as required for
+reasonable and customary use in describing the origin of the work and
+reproducing the content of this NOTICE file.
+
+The images in docs/brand/ contain text set in the Sora typeface, converted to
+outlines. Sora is Copyright 2019 The Sora Project Authors and is licensed
+under the SIL Open Font License, Version 1.1 (https://openfontlicense.org).
+assets/fonts/Sora-Variable.ttf is that font, unchanged, distributed under the
+same licence (assets/fonts/Sora-OFL.txt); it keeps its own licence.
+
+Shared token code
+src/theme/lumen/core.ts and src/theme/lumen/presets/ are copies of files from
+lumen-hydrodactyl-theme (Apache-2.0, same author), kept in sync through
+shared.lock. They are made available here under MIT by their author.
+
+KeyHelp
+The app talks to the documented KeyHelp REST API of a server you administer.
+It contains no code, text or images from KeyHelp. The test fixtures in
+src/mock/ are invented data shaped like the API's documented responses. The
+screenshots in docs/screenshots/ show the app with that invented data.
+
+Not affiliated with or endorsed by Keyweb AG. KeyHelp is named only to
+describe what the app works with; KeyHelp is a registered trademark of
+Keyweb AG.

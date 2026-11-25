@@ -1,0 +1,42 @@
+# Python (template checks and tests)
+__pycache__/
+*.pyc
+.venv/
+# Release build output (scripts/package_release.py, scripts/package_web.py)
+dist/
+# Web build (npm run build)
+web-build/
+# Dependencies
+node_modules/
+# Expo
+.expo/
+expo-env.d.ts
+.metro-health-check*
+# Playwright
+test-results/
+playwright-report/
+coverage/
+# Native projects are not kept in this repository
+/ios
+/android
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+# TypeScript
+*.tsbuildinfo
+# Logs and OS files
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
+# Never commit environment files
+.env
+.env.*
+!.env.example
+# Screenshots of the visual check (e2e/screenshots.spec.ts)
+screenshots/

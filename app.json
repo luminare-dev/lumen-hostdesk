@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "Lumen hostdesk",
+    "slug": "lumen-hostdesk",
+    "scheme": "lumenhostdesk",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#060B17",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#060B17"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "tech.luminare.hostdesk",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "tech.luminare.hostdesk",
+      "adaptiveIcon": {
+        "backgroundColor": "#060B17",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": ["POST_NOTIFICATIONS", "RECEIVE_BOOT_COMPLETED"],
+      "blockedPermissions": ["android.permission.SYSTEM_ALERT_WINDOW"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "name": "Lumen hostdesk",
+      "shortName": "hostdesk",
+      "lang": "en",
+      "description": "A companion app for KeyHelp server admins: status, clients, domains, mail and alerts over the KeyHelp API.",
+      "themeColor": "#060B17",
+      "backgroundColor": "#060B17"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-background-task",
+      "expo-localization",
+      [
+        "expo-notifications",
+        {
+          "color": "#5BDFFF"
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": ["./assets/fonts/Sora-Variable.ttf"]
+        }
+      ]
+    ]
+  }
+}
