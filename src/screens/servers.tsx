@@ -33,11 +33,11 @@ export function ConnectScreen({ onDone, onBack, prefillUrl }: { onDone?: () => v
   };
 
   return (
-    <Screen title={t('connect.title')} onBack={onBack} testID="screen-connect">
+    <Screen title={onBack ? t('connect.title') : t('app.name')} onBack={onBack} testID="screen-connect">
       {!onBack ? (
         <View style={{ gap: theme.space(1), marginBottom: theme.space(2) }}>
-          <T variant="display">{t('app.name')}</T>
           <T variant="muted">{t('app.tagline')}</T>
+          <T variant="heading">{t('connect.title')}</T>
         </View>
       ) : null}
       {!secretsPersistent || Platform.OS === 'web' ? (

@@ -105,6 +105,7 @@ export const en = {
   'client.firstName': 'First name',
   'client.lastName': 'Last name',
   'client.company': 'Company',
+  'client.contact': 'Contact',
   'client.plan': 'Hosting plan',
   'client.password': 'Password',
   'client.passwordHint': 'Leave empty to let the server generate one.',

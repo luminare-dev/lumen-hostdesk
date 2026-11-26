@@ -107,6 +107,7 @@ export const de: Record<keyof typeof en, string> = {
   'client.firstName': 'Vorname',
   'client.lastName': 'Nachname',
   'client.company': 'Firma',
+  'client.contact': 'Ansprechperson',
   'client.plan': 'Hosting-Tarif',
   'client.password': 'Passwort',
   'client.passwordHint': 'Leer lassen, dann erzeugt der Server eines.',

@@ -484,18 +484,20 @@ export function ListRow({
   right,
   onPress,
   testID,
+  titleLines = 1,
 }: {
   title: string;
   subtitle?: string;
   right?: ReactNode;
   onPress?: () => void;
   testID?: string;
+  titleLines?: number;
 }) {
   const { theme } = useApp();
   const content = (
     <View style={[styles.rowBetween, { gap: theme.space(3) }]}>
       <View style={[styles.fill, { gap: 2 }]}>
-        <T variant="label" numberOfLines={1}>
+        <T variant="label" numberOfLines={titleLines}>
           {title}
         </T>
         {subtitle ? (
@@ -610,7 +612,7 @@ export function ConfirmDialog({
 }) {
   const { theme, t } = useApp();
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+    <Modal visible={visible} transparent animationType={Platform.OS === 'web' ? 'none' : 'fade'} onRequestClose={onCancel}>
       <View style={[styles.backdrop, { padding: theme.space(5) }]}>
         <View
           role="alertdialog"

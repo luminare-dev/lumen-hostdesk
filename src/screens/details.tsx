@@ -74,7 +74,7 @@ export function ClientScreen({ id }: { id: number }) {
             <KeyValue label={t('client.email')} value={account.email ?? '—'} />
             <KeyValue label={t('client.company')} value={account.contact_data?.company || '—'} />
             <KeyValue
-              label={t('client.firstName')}
+              label={t('client.contact')}
               value={[account.contact_data?.first_name, account.contact_data?.last_name].filter(Boolean).join(' ') || '—'}
             />
             {account.created_at ? <T variant="caption">{t('client.created', { date: formatDate(account.created_at, language) })}</T> : null}

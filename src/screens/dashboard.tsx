@@ -86,7 +86,18 @@ export function DashboardScreen() {
             {usage(t('dashboard.disk'), util?.disk_space, settings.thresholds.diskPercent, 'meter-disk')}
             {usage(t('dashboard.memory'), util?.memory, settings.thresholds.memoryPercent, 'meter-memory')}
             {util?.swap && util.swap.total > 0 ? usage(t('dashboard.swap'), util.swap, 80, 'meter-swap') : null}
-            {usage(t('dashboard.inodes'), util?.inodes, settings.thresholds.diskPercent, 'meter-inodes')}
+            {util?.inodes ? (
+              <Meter
+                label={t('dashboard.inodes')}
+                percent={util.inodes.percent}
+                warnAt={settings.thresholds.diskPercent}
+                detail={t('common.of', {
+                  used: util.inodes.used.toLocaleString(language === 'de' ? 'de-AT' : 'en-GB'),
+                  total: util.inodes.total.toLocaleString(language === 'de' ? 'de-AT' : 'en-GB'),
+                })}
+                testID="meter-inodes"
+              />
+            ) : null}
           </Card>
 
           <Section title={t('dashboard.services')}>

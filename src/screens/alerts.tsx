@@ -61,6 +61,7 @@ export function AlertsScreen() {
           <ListRow
             key={`${server}-${alert.id}`}
             title={alertMessage(alert, server, t)}
+            titleLines={3}
             right={
               <View
                 style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: alert.severity === 'critical' ? theme.color.danger : theme.color.warning }}
