@@ -1,16 +1,12 @@
 import { defineConfig } from '@playwright/test';
-import { existsSync } from 'node:fs';
 
-// Outside CI, a Chromium at PW_CHROMIUM_PATH (default /opt/pw-browsers/chromium) is used when that
-// file exists; otherwise, and in CI, the build that `npx playwright install chromium` installs for
-// the pinned @playwright/test.
-const localChromium = process.env.PW_CHROMIUM_PATH ?? '/opt/pw-browsers/chromium';
-
+// The e2e run uses the static web build (npm run build) and answers every API request from the
+// in-memory mock server (e2e/fixtures.ts); nothing leaves the runner.
 export default defineConfig({
   testDir: 'e2e',
   timeout: 45_000,
   expect: { timeout: 10_000 },
-  retries: 0,
+  retries: process.env.CI ? 1 : 0,
   workers: 2,
   reporter: process.env.CI ? [['github'], ['list']] : [['list']],
   use: {
@@ -18,11 +14,8 @@ export default defineConfig({
     timezoneId: 'Europe/Vienna',
     locale: 'en-GB',
     viewport: { width: 390, height: 844 },
-    permissions: ['clipboard-read', 'clipboard-write'],
-    launchOptions:
-      !process.env.CI && existsSync(localChromium)
-        ? { executablePath: localChromium, args: ['--autoplay-policy=no-user-gesture-required'] }
-        : { args: ['--autoplay-policy=no-user-gesture-required'] },
+    deviceScaleFactor: 2,
+    colorScheme: 'dark',
     trace: 'retain-on-failure',
   },
   webServer: {

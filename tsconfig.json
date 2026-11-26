@@ -3,11 +3,13 @@
   "compilerOptions": {
     "strict": true,
     "resolveJsonModule": true,
-    "types": ["jest", "node"]
+    "types": [
+      "jest",
+      "node"
+    ]
   },
   "exclude": [
     "node_modules",
-    "api",
     "web-build",
     "dist",
     "coverage",
@@ -15,6 +17,7 @@
     "babel.config.js",
     "metro.config.js",
     "android",
-    "ios"
+    "ios",
+    "e2e/screenshots"
   ]
 }

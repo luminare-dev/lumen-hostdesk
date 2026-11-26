@@ -30,7 +30,7 @@ describe('normalizeServerUrl', () => {
     ['ftp://panel.example.org', 'insecure'],
     ['', 'invalidUrl'],
     ['panel', 'invalidUrl'],
-    ['https://user:pw@panel.example.org', 'invalidUrl'],
+    ['https://user:pw@example.org', 'invalidUrl'],
     ['https://panel.example.org/keyhelp', 'invalidUrl'],
     ['https://panel.example.org:99999', 'invalidUrl'],
     ['pan el.example.org', 'invalidUrl'],

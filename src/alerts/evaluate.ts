@@ -51,7 +51,8 @@ export function evaluateAlerts(snapshot: Snapshot, thresholds: Thresholds, now: 
     if (!cert.valid_till) continue;
     const till = new Date(cert.valid_till).getTime();
     if (Number.isNaN(till)) continue;
-    const days = Math.floor((till - now.getTime()) / DAY);
+    // Whole days left, rounded up: 8.9 days left reads as "in 9 days".
+    const days = Math.ceil((till - now.getTime()) / DAY);
     const domain = cert.secured_domains?.[0] ?? cert.name;
     if (till <= now.getTime()) {
       alerts.push({ id: `cert-expired:${cert.id}:${cert.valid_till}`, kind: 'certificateExpired', severity: 'critical', params: { domain } });
