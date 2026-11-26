@@ -26,7 +26,78 @@ works with; KeyHelp is a registered trademark of Keyweb AG.
 [![ci](https://github.com/luminare-dev/lumen-hostdesk/actions/workflows/ci.yml/badge.svg)](https://github.com/luminare-dev/lumen-hostdesk/actions/workflows/ci.yml)
 [![licence](https://img.shields.io/github/license/luminare-dev/lumen-hostdesk)](LICENSE)
 
-Work in progress.
+<!-- screenshots:begin -->
+| Dark | Light |
+|---|---|
+| ![Server status, dark](docs/screenshots/dashboard-dark.png) | ![Server status, light](docs/screenshots/dashboard-light.png) |
+| ![Domains with certificate state, dark](docs/screenshots/domains-dark.png) | ![Domains with certificate state, light](docs/screenshots/domains-light.png) |
+| ![Client detail, dark](docs/screenshots/client-dark.png) | ![Client detail, light](docs/screenshots/client-light.png) |
+| ![Alerts, dark](docs/screenshots/alerts-dark.png) | ![Alerts, light](docs/screenshots/alerts-light.png) |
+| ![Confirmation before a password reset, dark](docs/screenshots/confirm-dark.png) | ![Confirmation before a password reset, light](docs/screenshots/confirm-light.png) |
+| ![Settings, dark](docs/screenshots/settings-dark.png) | ![Settings, light](docs/screenshots/settings-light.png) |
+
+Screenshots from CI (the `screenshots` artifact of the `ci` workflow): the web build at phone
+size against the mock API, with invented data.
+<!-- screenshots:end -->
+
+## Features
+
+- **Connect** your KeyHelp server with its address and an API key (KeyHelp API v2,
+  `X-API-Key`). The key is checked before it is saved and is kept only on the device, in the
+  system keychain/keystore. Several servers; https only; certificate, key, IP-restriction and
+  reachability problems are explained in plain words.
+- **Status**: load, disk, memory, swap, inodes, service ports online/offline, updates, mail
+  queue, versions.
+- **Accounts** with search: clients, domains (with certificate expiry), certificates, e-mail
+  accounts (with quota), databases, FTP users, scheduled tasks and backup runs.
+- **Actions**: create and edit clients, disable and enable clients and domains, create domains,
+  e-mail accounts and databases, reset mailbox passwords. Disruptive actions ask first; passwords
+  and names the server generates are shown once and never stored.
+- **Alerts**: expiring or expired certificates, disk, inodes, memory, offline services, full
+  mailboxes and failed backups, with your own thresholds. A background check on Android and iOS
+  notifies you of new problems; no server of ours is involved ([limits](docs/alerts.md)).
+- **Lumen look** in dark and light, from the shared Lumen design tokens: pick a preset or import a
+  token file from any Lumen theme.
+- English and German.
+
+The endpoints used, and the ones not used, are listed in [docs/api.md](docs/api.md).
+
+## Security
+
+- The API key is stored with `expo-secure-store` (iOS Keychain, Android Keystore), readable after
+  the first unlock so the background check works. It is never written to app storage or logs.
+- On the **web** the key lives only in the browser tab's session storage and is gone when the tab
+  is closed; the app says so. KeyHelp normally does not send CORS headers, so the web build is
+  mainly a preview and the test target.
+- Only `https://` addresses are accepted, redirects are refused, and certificate errors are not
+  skipped.
+- Create a dedicated API key in KeyHelp (*Configuration → API*) and restrict it to the IP
+  addresses you connect from. Treat it like an admin password: with the key and network access,
+  the server can be changed.
+
+## Development
+
+Requirements: Node.js 22 (`.nvmrc`), Python 3 for the repository checks.
+
+```bash
+npm ci
+npm run web          # Expo dev server in the browser
+npm run check        # type check, Jest unit tests, web build
+npx playwright install chromium
+npm run e2e          # Playwright against the web build and the mock API
+SCREENSHOTS=1 npx playwright test e2e/screenshots.spec.ts
+python3 -m unittest discover -s tests -v   # repository checks
+```
+
+- `src/api/`: the typed API client, errors and address handling.
+- `src/mock/`: the in-memory mock of the API and its invented fixtures (tests only).
+- `src/alerts/`: alert rules, the check of all servers, the background task.
+- `src/theme/lumen/`: the shared Lumen token core, a locked copy of
+  [lumen-hydrodactyl-theme](https://github.com/luminare-dev/lumen-hydrodactyl-theme)'s
+  (`shared.lock`, checked by `scripts/check_shared.py` in CI).
+- No real server and no real key are used anywhere in the tests.
+
+Native builds use EAS; what is needed for them is in [docs/builds.md](docs/builds.md).
 
 ## Licence
 
