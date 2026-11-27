@@ -6,6 +6,7 @@ import { getLocales } from 'expo-localization';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
 
+import { backgroundSupported, setBackgroundChecks } from '../alerts/background';
 import type { KeyHelpClient } from '../api/client';
 import { pickLanguage, translator, type Language, type Translate } from '../i18n';
 import { resolveTokens, themeFor, type Theme } from '../theme/tokens';
@@ -79,6 +80,14 @@ export function AppProvider({ children, store = AsyncStorage, secrets = secretSt
       cancelled = true;
     };
   }, [store]);
+
+  // Register the background check once settings are loaded and a server exists (the default is
+  // "on", so waiting for the settings switch to be toggled would never start it).
+  const hasServers = servers.length > 0;
+  useEffect(() => {
+    if (!ready || !backgroundSupported) return;
+    void setBackgroundChecks(settings.backgroundChecks && hasServers).catch(() => undefined);
+  }, [ready, hasServers, settings.backgroundChecks]);
 
   const active = useMemo(() => servers.find((s) => s.id === activeId) ?? null, [servers, activeId]);
 
