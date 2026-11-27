@@ -3,7 +3,7 @@
     "name": "Lumen hostdesk",
     "slug": "lumen-hostdesk",
     "scheme": "lumenhostdesk",
-    "version": "0.0.0",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -27,8 +27,13 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "permissions": ["POST_NOTIFICATIONS", "RECEIVE_BOOT_COMPLETED"],
-      "blockedPermissions": ["android.permission.SYSTEM_ALERT_WINDOW"]
+      "permissions": [
+        "POST_NOTIFICATIONS",
+        "RECEIVE_BOOT_COMPLETED"
+      ],
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -52,7 +57,9 @@
       [
         "expo-font",
         {
-          "fonts": ["./assets/fonts/Sora-Variable.ttf"]
+          "fonts": [
+            "./assets/fonts/Sora-Variable.ttf"
+          ]
         }
       ]
     ]
