@@ -1,17 +1,22 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { evaluateAlerts } from '../alerts/evaluate';
 import type { UsageBlock } from '../api/types';
+import { hostOf } from '../api/url';
 import { formatBytes } from '../i18n';
 import { useNav } from '../navigation';
 import { useApp } from '../state/AppProvider';
 import { useResource } from '../state/useResource';
-import { Badge, Button, Card, ErrorPanel, KeyValue, Loading, Meter, Notice, Screen, Section, styles, T } from '../ui/kit';
+import { Badge, Button, Card, ErrorPanel, KeyValue, Loading, Meter, Notice, Screen, Section, styles, T, TypedConfirmDialog } from '../ui/kit';
+import { useAction } from './details';
 import { NeedsKey } from './servers';
 
 export function DashboardScreen() {
-  const { t, client, active, theme, language, settings } = useApp();
+  const { t, client, active, theme, language, settings, readOnly } = useApp();
+  const reboot = useAction();
+  const [rebootOpen, setRebootOpen] = useState(false);
+  const [rebootSent, setRebootSent] = useState(false);
   const nav = useNav();
   const status = useResource(client, 'server', (c) => c.server());
   const certs = useResource(client, 'certificates', (c) => c.certificates());
@@ -134,6 +139,44 @@ export function DashboardScreen() {
               ))}
             </Card>
           </Section>
+          {rebootSent ? (
+            <Notice tone="warning" testID="reboot-sent">
+              {t('dashboard.rebootSent')}
+            </Notice>
+          ) : null}
+          {!readOnly ? (
+            <>
+              <Button
+                label={t('dashboard.reboot')}
+                kind="danger"
+                onPress={() => {
+                  reboot.reset();
+                  setRebootOpen(true);
+                }}
+                testID="reboot"
+              />
+              <TypedConfirmDialog
+                visible={rebootOpen}
+                title={t('dashboard.rebootTitle', { host: s.meta?.hostname ?? (active ? hostOf(active.origin) : '') })}
+                body={t('dashboard.rebootBody')}
+                accepted={[s.meta?.hostname ?? (active ? hostOf(active.origin) : '')]}
+                confirmLabel={t('dashboard.reboot')}
+                busy={reboot.busy}
+                error={reboot.error}
+                onCancel={() => setRebootOpen(false)}
+                onConfirm={async () => {
+                  const done = await reboot.run(async () => {
+                    await client?.rebootServer();
+                    return true;
+                  });
+                  if (done) {
+                    setRebootOpen(false);
+                    setRebootSent(true);
+                  }
+                }}
+              />
+            </>
+          ) : null}
           <Button label={t('common.refresh')} kind="secondary" onPress={() => {
               status.reload();
               certs.reload();

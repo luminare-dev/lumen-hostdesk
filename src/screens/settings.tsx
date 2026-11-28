@@ -7,6 +7,7 @@ import { useNav } from '../navigation';
 import { useApp } from '../state/AppProvider';
 import type { LanguageSetting, ThemeSetting } from '../state/settings';
 import { importTokens, PRESET_NAMES, PRESETS, type PresetName } from '../theme/tokens';
+import { useReadOnlyChange } from './readOnly';
 import { Button, Card, Field, ListRow, Notice, Screen, Section, Segmented, T, ToggleRow } from '../ui/kit';
 
 function NumberField({ label, value, onChange, testID }: { label: string; value: number; onChange: (n: number) => void; testID?: string }) {
@@ -33,11 +34,32 @@ export function SettingsScreen() {
   const setThreshold = (patch: Partial<Thresholds>) => updateSettings({ thresholds: { ...th, ...patch } });
   const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, Math.round(n)));
   const version = appConfig.expo.version;
+  const readOnlyChange = useReadOnlyChange();
 
   return (
     <Screen title={t('settings.title')} testID="screen-settings">
       <Section title={t('settings.servers')}>
         <ListRow title={active?.name ?? t('servers.add')} subtitle={`${servers.length} × ${t('servers.title')}`} onPress={() => nav.push({ name: 'servers' })} testID="settings-servers" />
+      </Section>
+
+      <Section title={t('readOnly.title')}>
+        <Segmented<'on' | 'off'>
+          label={t('readOnly.default')}
+          value={settings.readOnlyDefault ? 'on' : 'off'}
+          onChange={(choice) => {
+            const next = choice === 'on';
+            void readOnlyChange.request(settings.readOnlyDefault, next, t('readOnly.unlockDefaultTitle'), () =>
+              updateSettings({ readOnlyDefault: next })
+            );
+          }}
+          options={[
+            { value: 'off', label: t('readOnly.optionOff') },
+            { value: 'on', label: t('readOnly.optionOn') },
+          ]}
+          testID="read-only-default"
+        />
+        <T variant="caption">{`${t('readOnly.default')}. ${t('readOnly.defaultHint')}`}</T>
+        {readOnlyChange.ui}
       </Section>
 
       <Section title={t('settings.language')}>

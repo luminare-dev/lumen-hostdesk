@@ -22,6 +22,11 @@ export type Route =
   | { name: 'email'; id: number }
   | { name: 'emailForm'; clientId?: number }
   | { name: 'databaseForm'; clientId?: number }
+  | { name: 'database'; id: number }
+  | { name: 'dns'; domainId: number }
+  /** No index: a new record. */
+  | { name: 'dnsRecord'; domainId: number; index?: number }
+  | { name: 'dnsSoa'; domainId: number }
   | { name: 'tokens' };
 
 export interface Navigation {

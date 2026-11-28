@@ -6,7 +6,8 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 
 import { NavigationProvider, useNav, type Tab } from './src/navigation';
 import { AlertsScreen } from './src/screens/alerts';
-import { ClientScreen, DomainScreen, EmailScreen } from './src/screens/details';
+import { ClientScreen, DatabaseScreen, DomainScreen, EmailScreen } from './src/screens/details';
+import { DnsRecordScreen, DnsScreen, DnsSoaScreen } from './src/screens/dns';
 import { DashboardScreen } from './src/screens/dashboard';
 import { ClientFormScreen, DatabaseFormScreen, DomainFormScreen, EmailFormScreen } from './src/screens/forms';
 import { ListScreen, ResourcesScreen } from './src/screens/resources';
@@ -96,6 +97,14 @@ function CurrentScreen() {
       return <EmailFormScreen clientId={route.clientId} />;
     case 'databaseForm':
       return <DatabaseFormScreen clientId={route.clientId} />;
+    case 'database':
+      return <DatabaseScreen id={route.id} />;
+    case 'dns':
+      return <DnsScreen domainId={route.domainId} />;
+    case 'dnsRecord':
+      return <DnsRecordScreen domainId={route.domainId} index={route.index} />;
+    case 'dnsSoa':
+      return <DnsSoaScreen domainId={route.domainId} />;
     case 'tokens':
       return <TokensScreen />;
   }

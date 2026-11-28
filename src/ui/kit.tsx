@@ -1,7 +1,7 @@
 // Small UI building blocks drawn from the Lumen theme. Every colour, radius, spacing step and font
 // comes from useApp().theme, so an imported token file restyles the whole app.
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -110,9 +110,15 @@ export function Screen({
   scroll?: boolean;
   testID?: string;
 }) {
-  const { theme, t } = useApp();
+  const { theme, t, readOnly, active } = useApp();
   const insets = useSafeAreaInsets();
   const pad = theme.space(4);
+  const badge =
+    readOnly && active ? (
+      <View aria-label={t('readOnly.badgeHint')} testID="read-only-badge">
+        <Badge label={t('readOnly.badge')} tone="info" />
+      </View>
+    ) : null;
   const header = (
     <View style={[styles.header, { paddingTop: insets.top + theme.space(3), paddingHorizontal: pad, gap: theme.space(2) }]}>
       {onBack ? (
@@ -134,6 +140,7 @@ export function Screen({
           {title}
         </T>
       </View>
+      {badge}
       {right}
     </View>
   );
@@ -599,6 +606,7 @@ export function ConfirmDialog({
   onCancel,
   busy,
   children,
+  confirmDisabled,
 }: {
   visible: boolean;
   title: string;
@@ -609,6 +617,8 @@ export function ConfirmDialog({
   onCancel: () => void;
   busy?: boolean;
   children?: ReactNode;
+  /** Keeps the confirm button disabled, for example until the typed text matches. */
+  confirmDisabled?: boolean;
 }) {
   const { theme, t } = useApp();
   return (
@@ -639,11 +649,85 @@ export function ConfirmDialog({
           {children}
           <View style={[styles.row, { gap: theme.space(2), justifyContent: 'flex-end', flexWrap: 'wrap' }]}>
             <Button label={t('common.cancel')} onPress={onCancel} kind="secondary" testID="confirm-cancel" />
-            <Button label={confirmLabel} onPress={onConfirm} kind={danger ? 'danger' : 'primary'} busy={busy} testID="confirm-ok" />
+            <Button
+              label={confirmLabel}
+              onPress={onConfirm}
+              kind={danger ? 'danger' : 'primary'}
+              busy={busy}
+              disabled={confirmDisabled}
+              testID="confirm-ok"
+            />
           </View>
         </View>
       </View>
     </Modal>
+  );
+}
+
+/** Whether the typed text is exactly one of the accepted names (spaces around it are ignored). */
+export function typedMatches(typed: string, accepted: readonly string[]): boolean {
+  const text = typed.trim();
+  return text !== '' && accepted.some((name) => name !== '' && name === text);
+}
+
+/**
+ * A confirmation that only enables its button once the exact name is typed: for deletes and the
+ * reboot. `accepted` holds the name to show first, then other spellings (the punycode form).
+ * The dialog stays open on an error so it can be shown in place.
+ */
+export function TypedConfirmDialog({
+  visible,
+  title,
+  body,
+  accepted,
+  confirmLabel,
+  onConfirm,
+  onCancel,
+  busy,
+  error,
+  children,
+}: {
+  visible: boolean;
+  title: string;
+  body: string;
+  accepted: readonly string[];
+  confirmLabel: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  busy?: boolean;
+  error?: KeyHelpError;
+  children?: ReactNode;
+}) {
+  const { t, theme } = useApp();
+  const [typed, setTyped] = useState('');
+  useEffect(() => {
+    if (!visible) setTyped('');
+  }, [visible]);
+  const name = accepted[0] ?? '';
+  const ok = typedMatches(typed, accepted);
+  return (
+    <ConfirmDialog
+      visible={visible}
+      title={title}
+      body={body}
+      confirmLabel={confirmLabel}
+      busy={busy}
+      confirmDisabled={!ok}
+      onCancel={onCancel}
+      onConfirm={() => {
+        if (ok) onConfirm();
+      }}
+    >
+      {children}
+      <View style={{ gap: theme.space(1) }}>
+        <T variant="caption">{t('confirm.typeToConfirm')}</T>
+        <T variant="mono" selectable testID="confirm-expected">
+          {name}
+        </T>
+      </View>
+      <Field label={t('confirm.typedLabel')} value={typed} onChangeText={setTyped} placeholder={name} testID="confirm-typed" />
+      {error ? <ErrorPanel error={error} /> : null}
+    </ConfirmDialog>
   );
 }
 

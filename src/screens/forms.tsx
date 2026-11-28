@@ -47,6 +47,7 @@ function ClientPicker({ clients, value, onChange }: { clients: Client[]; value: 
 /** The shared frame of the create and edit forms: submit, error, generated values, back. */
 function useSubmit() {
   const nav = useNav();
+  const { readOnly, t } = useApp();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<KeyHelpError>();
   const [generated, setGenerated] = useState<Created>();
@@ -66,6 +67,11 @@ function useSubmit() {
   };
   const footer = (
     <>
+      {readOnly ? (
+        <Notice tone="info" testID="form-read-only">
+          {t('readOnly.notice')}
+        </Notice>
+      ) : null}
       {error ? <ErrorPanel error={error} /> : null}
       {generated ? <GeneratedValues values={generated} onDone={nav.pop} /> : null}
     </>

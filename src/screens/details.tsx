@@ -7,12 +7,28 @@ import { formatBytes, formatDate } from '../i18n';
 import { useNav } from '../navigation';
 import { useApp } from '../state/AppProvider';
 import { clearResourceCache, useResource } from '../state/useResource';
-import { Badge, Button, Card, ConfirmDialog, ErrorPanel, Field, KeyValue, ListRow, Loading, Meter, Notice, Screen, Section, T } from '../ui/kit';
+import {
+  Badge,
+  Button,
+  Card,
+  ConfirmDialog,
+  ErrorPanel,
+  Field,
+  KeyValue,
+  ListRow,
+  Loading,
+  Meter,
+  Notice,
+  Screen,
+  Section,
+  T,
+  TypedConfirmDialog,
+} from '../ui/kit';
 import { GeneratedValues } from './forms';
 import { certificateBadge } from './resources';
 
 /** Runs one write, keeps its error and busy state, and clears the cache after success. */
-function useAction() {
+export function useAction() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<KeyHelpError>();
   const run = async <T,>(action: () => Promise<T>): Promise<T | undefined> => {
@@ -29,11 +45,70 @@ function useAction() {
       setBusy(false);
     }
   };
-  return { busy, error, run };
+  const reset = () => setError(undefined);
+  return { busy, error, run, reset };
+}
+
+/** The names a typed confirmation accepts: the shown (UTF-8) form first, then the ASCII form. */
+const names = (...values: (string | undefined)[]) => [...new Set(values.filter((v): v is string => !!v))];
+
+/** A delete button with its typed confirmation; pops the screen after the delete. */
+function DeleteAction({
+  label,
+  title,
+  body,
+  accepted,
+  remove,
+  testID,
+}: {
+  label: string;
+  title: string;
+  body: string;
+  accepted: string[];
+  remove: () => Promise<void>;
+  testID: string;
+}) {
+  const nav = useNav();
+  const action = useAction();
+  const [open, setOpen] = useState(false);
+  const confirm = async () => {
+    const done = await action.run(async () => {
+      await remove();
+      return true;
+    });
+    if (done) {
+      setOpen(false);
+      nav.pop();
+    }
+  };
+  return (
+    <>
+      <Button
+        label={label}
+        kind="danger"
+        onPress={() => {
+          action.reset();
+          setOpen(true);
+        }}
+        testID={testID}
+      />
+      <TypedConfirmDialog
+        visible={open}
+        title={title}
+        body={body}
+        accepted={accepted}
+        confirmLabel={label}
+        busy={action.busy}
+        error={action.error}
+        onCancel={() => setOpen(false)}
+        onConfirm={confirm}
+      />
+    </>
+  );
 }
 
 export function ClientScreen({ id }: { id: number }) {
-  const { t, client, language } = useApp();
+  const { t, client, language, readOnly } = useApp();
   const nav = useNav();
   const detail = useResource(client, `client:${id}`, async (c) => {
     const [account, stats, domains, emails, databases] = await Promise.all([c.client(id), c.clientStats(id), c.domains(), c.emails(), c.databases()]);
@@ -63,7 +138,11 @@ export function ClientScreen({ id }: { id: number }) {
       title={account?.username ?? t('resources.clients')}
       onBack={nav.pop}
       testID="screen-client"
-      right={account ? <Button label={t('common.edit')} compact kind="secondary" onPress={() => nav.push({ name: 'clientForm', id })} testID="client-edit" /> : undefined}
+      right={
+        account && !readOnly ? (
+          <Button label={t('common.edit')} compact kind="secondary" onPress={() => nav.push({ name: 'clientForm', id })} testID="client-edit" />
+        ) : undefined
+      }
     >
       {detail.error ? <ErrorPanel error={detail.error} onRetry={detail.reload} /> : null}
       {!data && detail.loading ? <Loading /> : null}
@@ -110,27 +189,41 @@ export function ClientScreen({ id }: { id: number }) {
             {data.domains.map((d) => (
               <ListRow key={d.id} title={d.domain_utf8 ?? d.domain} onPress={() => nav.push({ name: 'domain', id: d.id })} />
             ))}
-            <Button label={t('domain.new')} kind="secondary" compact onPress={() => nav.push({ name: 'domainForm', clientId: id })} />
+            {!readOnly ? <Button label={t('domain.new')} kind="secondary" compact onPress={() => nav.push({ name: 'domainForm', clientId: id })} /> : null}
           </Section>
           <Section title={t('client.emails')}>
             {data.emails.map((e) => (
               <ListRow key={e.id} title={e.email_utf8 ?? e.email} onPress={() => nav.push({ name: 'email', id: e.id })} />
             ))}
-            <Button label={t('email.new')} kind="secondary" compact onPress={() => nav.push({ name: 'emailForm', clientId: id })} />
+            {!readOnly ? <Button label={t('email.new')} kind="secondary" compact onPress={() => nav.push({ name: 'emailForm', clientId: id })} /> : null}
           </Section>
           <Section title={t('client.databases')}>
             {data.databases.map((d) => (
-              <ListRow key={d.id} title={d.database_name} subtitle={formatBytes(d.size, language)} />
+              <ListRow key={d.id} title={d.database_name} subtitle={formatBytes(d.size, language)} onPress={() => nav.push({ name: 'database', id: d.id })} />
             ))}
-            <Button label={t('database.new')} kind="secondary" compact onPress={() => nav.push({ name: 'databaseForm', clientId: id })} />
+            {!readOnly ? (
+              <Button label={t('database.new')} kind="secondary" compact onPress={() => nav.push({ name: 'databaseForm', clientId: id })} />
+            ) : null}
           </Section>
           {action.error ? <ErrorPanel error={action.error} /> : null}
-          <Button
-            label={suspended ? t('client.enable') : t('client.disable')}
-            kind={suspended ? 'primary' : 'danger'}
-            onPress={() => setConfirm(true)}
-            testID="client-toggle"
-          />
+          {!readOnly ? (
+            <>
+              <Button
+                label={suspended ? t('client.enable') : t('client.disable')}
+                kind={suspended ? 'primary' : 'danger'}
+                onPress={() => setConfirm(true)}
+                testID="client-toggle"
+              />
+              <DeleteAction
+                label={t('client.delete')}
+                title={t('client.deleteTitle', { name: account.username })}
+                body={t('client.deleteBody', { domains: data.domains.length, emails: data.emails.length, databases: data.databases.length })}
+                accepted={[account.username]}
+                remove={() => (client ? client.deleteClient(id) : Promise.resolve())}
+                testID="client-delete"
+              />
+            </>
+          ) : null}
           <ConfirmDialog
             visible={confirm}
             title={t(suspended ? 'client.enableTitle' : 'client.disableTitle', { name: account.username })}
@@ -148,11 +241,17 @@ export function ClientScreen({ id }: { id: number }) {
 }
 
 export function DomainScreen({ id }: { id: number }) {
-  const { t, client, language, settings } = useApp();
+  const { t, client, language, settings, readOnly } = useApp();
   const nav = useNav();
   const detail = useResource(client, `domain:${id}`, async (c) => {
-    const [domain, certificates, clients] = await Promise.all([c.domain(id), c.certificates(), c.clients()]);
-    return { domain, certificate: certificates.find((cert) => cert.id === domain.security?.id_certificate), owner: clients.find((cl) => cl.id === domain.id_user) };
+    const [domain, certificates, clients, domains, emails] = await Promise.all([c.domain(id), c.certificates(), c.clients(), c.domains(), c.emails()]);
+    return {
+      domain,
+      certificate: certificates.find((cert) => cert.id === domain.security?.id_certificate),
+      owner: clients.find((cl) => cl.id === domain.id_user),
+      subdomains: domains.filter((d) => d.id_parent_domain === id).length,
+      emails: emails.filter((e) => e.id_domain === id).length,
+    };
   });
   const action = useAction();
   const [confirm, setConfirm] = useState(false);
@@ -200,8 +299,28 @@ export function DomainScreen({ id }: { id: number }) {
               ) : null}
             </Card>
           </Section>
+          {!domain.is_subdomain ? (
+            <ListRow title={t('dns.open')} onPress={() => nav.push({ name: 'dns', domainId: id })} testID="domain-dns" />
+          ) : null}
           {action.error ? <ErrorPanel error={action.error} /> : null}
-          <Button label={disabled ? t('domain.enable') : t('domain.disable')} kind={disabled ? 'primary' : 'danger'} onPress={() => setConfirm(true)} testID="domain-toggle" />
+          {!readOnly ? (
+            <>
+              <Button
+                label={disabled ? t('domain.enable') : t('domain.disable')}
+                kind={disabled ? 'primary' : 'danger'}
+                onPress={() => setConfirm(true)}
+                testID="domain-toggle"
+              />
+              <DeleteAction
+                label={t('domain.delete')}
+                title={t('domain.deleteTitle', { name })}
+                body={t('domain.deleteBody', { subdomains: data.subdomains, emails: data.emails })}
+                accepted={names(domain.domain_utf8, domain.domain)}
+                remove={() => (client ? client.deleteDomain(id) : Promise.resolve())}
+                testID="domain-delete"
+              />
+            </>
+          ) : null}
           <ConfirmDialog
             visible={confirm}
             title={t(disabled ? 'domain.enableTitle' : 'domain.disableTitle', { name })}
@@ -219,7 +338,7 @@ export function DomainScreen({ id }: { id: number }) {
 }
 
 export function EmailScreen({ id }: { id: number }) {
-  const { t, client, language } = useApp();
+  const { t, client, language, readOnly } = useApp();
   const nav = useNav();
   const detail = useResource(client, `email:${id}`, (c) => c.email(id));
   const action = useAction();
@@ -259,12 +378,14 @@ export function EmailScreen({ id }: { id: number }) {
             <KeyValue label={t('email.aliases')} value={(account.aliases ?? []).join(', ') || '—'} />
             <KeyValue label={t('email.forwardings')} value={(account.forwardings ?? []).join(', ') || '—'} />
           </Card>
-          <Section title={t('email.resetPassword')}>
-            <Card>
-              <Field label={t('email.newPassword')} value={password} onChangeText={setPassword} secure hint={t('email.newPasswordHint')} testID="email-password" />
-              <Button label={t('email.resetPassword')} kind="danger" onPress={() => setConfirm(true)} testID="email-reset" />
-            </Card>
-          </Section>
+          {!readOnly ? (
+            <Section title={t('email.resetPassword')}>
+              <Card>
+                <Field label={t('email.newPassword')} value={password} onChangeText={setPassword} secure hint={t('email.newPasswordHint')} testID="email-password" />
+                <Button label={t('email.resetPassword')} kind="danger" onPress={() => setConfirm(true)} testID="email-reset" />
+              </Card>
+            </Section>
+          ) : null}
           {action.error ? <ErrorPanel error={action.error} /> : null}
           {result ? (
             result.password ? (
@@ -275,6 +396,16 @@ export function EmailScreen({ id }: { id: number }) {
               </Notice>
             )
           ) : null}
+          {!readOnly ? (
+            <DeleteAction
+              label={t('email.delete')}
+              title={t('email.deleteTitle', { address })}
+              body={t('email.deleteBody')}
+              accepted={names(account.email_utf8, account.email)}
+              remove={() => (client ? client.deleteEmail(id) : Promise.resolve())}
+              testID="email-delete"
+            />
+          ) : null}
           <ConfirmDialog
             visible={confirm}
             title={t('email.resetTitle', { address })}
@@ -284,6 +415,45 @@ export function EmailScreen({ id }: { id: number }) {
             onCancel={() => setConfirm(false)}
             onConfirm={reset}
           />
+        </>
+      ) : null}
+    </Screen>
+  );
+}
+
+export function DatabaseScreen({ id }: { id: number }) {
+  const { t, client, language, readOnly } = useApp();
+  const nav = useNav();
+  const detail = useResource(client, `database:${id}`, async (c) => {
+    const [database, clients] = await Promise.all([c.database(id), c.clients()]);
+    return { database, owner: clients.find((cl) => cl.id === database.id_user) };
+  });
+  const database = detail.data?.database;
+  return (
+    <Screen title={database?.database_name ?? t('database.title')} onBack={nav.pop} testID="screen-database">
+      {detail.error ? <ErrorPanel error={detail.error} onRetry={detail.reload} /> : null}
+      {!database && detail.loading ? <Loading /> : null}
+      {database ? (
+        <>
+          <Card>
+            <KeyValue label={t('domain.owner')} value={detail.data?.owner?.username ?? `#${database.id_user}`} />
+            <KeyValue label={t('database.user')} value={database.database_username} />
+            <KeyValue label={t('database.size')} value={formatBytes(database.size, language)} />
+            {database.description ? <KeyValue label={t('email.description')} value={database.description} /> : null}
+            {database.remote_hosts && database.remote_hosts.length > 0 ? (
+              <T variant="caption">{t('database.remoteHosts', { hosts: database.remote_hosts.join(', ') })}</T>
+            ) : null}
+          </Card>
+          {!readOnly ? (
+            <DeleteAction
+              label={t('database.delete')}
+              title={t('database.deleteTitle', { name: database.database_name })}
+              body={t('database.deleteBody', { user: database.database_username })}
+              accepted={[database.database_name]}
+              remove={() => (client ? client.deleteDatabase(id) : Promise.resolve())}
+              testID="database-delete"
+            />
+          ) : null}
         </>
       ) : null}
     </Screen>

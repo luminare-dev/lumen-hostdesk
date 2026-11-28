@@ -184,6 +184,7 @@ function rowsFor(kind: ResourceKind, data: Loaded, t: Translate, language: Langu
           .filter(Boolean)
           .join(' · '),
         right: d.description ? <Badge label={d.description} /> : undefined,
+        route: { name: 'database', id: d.id },
       }));
     case 'ftp':
       return (data.ftp ?? []).map((f) => ({
@@ -235,7 +236,7 @@ const CREATE: Partial<Record<ResourceKind, Route>> = {
 };
 
 export function ListScreen({ kind }: { kind: ResourceKind }) {
-  const { t, client, language, settings } = useApp();
+  const { t, client, language, settings, readOnly } = useApp();
   const nav = useNav();
   const [query, setQuery] = useState('');
   const resource = useResource(client, `list:${kind}`, (c) => loadKind(c, kind));
@@ -245,7 +246,7 @@ export function ListScreen({ kind }: { kind: ResourceKind }) {
   );
   const needle = query.trim().toLowerCase();
   const visible = needle ? rows.filter((row) => row.search.toLowerCase().includes(needle)) : rows;
-  const create = CREATE[kind];
+  const create = readOnly ? undefined : CREATE[kind];
 
   return (
     <Screen

@@ -5,8 +5,10 @@ import { classifyFetchError, KeyHelpError } from '../api/errors';
 import { hostOf } from '../api/url';
 import { useNav } from '../navigation';
 import { useApp } from '../state/AppProvider';
+import { effectiveReadOnly, readOnlySetting, type ReadOnlySetting } from '../state/servers';
 import { clearResourceCache } from '../state/useResource';
-import { Badge, Button, ConfirmDialog, ErrorPanel, Field, ListRow, Notice, Screen, T } from '../ui/kit';
+import { Badge, Button, ConfirmDialog, ErrorPanel, Field, ListRow, Notice, Screen, Segmented, T } from '../ui/kit';
+import { useReadOnlyChange } from './readOnly';
 
 /** Address and API key; the key is checked against the server before anything is saved. */
 export function ConnectScreen({ onDone, onBack, prefillUrl }: { onDone?: () => void; onBack?: () => void; prefillUrl?: string }) {
@@ -65,8 +67,10 @@ export function ConnectScreen({ onDone, onBack, prefillUrl }: { onDone?: () => v
 }
 
 export function ServersScreen() {
-  const { t, servers, active, selectServer, removeServer } = useApp();
+  const { t, servers, active, selectServer, removeServer, settings, setServerReadOnly } = useApp();
   const nav = useNav();
+  const readOnlyChange = useReadOnlyChange();
+  const fallback = settings.readOnlyDefault ? t('readOnly.on') : t('readOnly.off');
   const [removing, setRemoving] = useState<string | null>(null);
   const target = servers.find((s) => s.id === removing);
 
@@ -85,11 +89,29 @@ export function ServersScreen() {
             right={server.id === active?.id ? <Badge label={t('servers.active')} tone="success" /> : undefined}
             testID={`server-${server.id}`}
           />
+          <Segmented<ReadOnlySetting>
+            label={t('readOnly.server')}
+            value={readOnlySetting(server)}
+            onChange={(setting) => {
+              const before = effectiveReadOnly(server, settings.readOnlyDefault);
+              const after = effectiveReadOnly({ readOnly: setting === 'default' ? undefined : setting === 'on' }, settings.readOnlyDefault);
+              void readOnlyChange.request(before, after, t('readOnly.unlockTitle', { name: server.name }), () => {
+                void setServerReadOnly(server.id, setting);
+              });
+            }}
+            options={[
+              { value: 'default', label: t('readOnly.optionDefault', { state: fallback }) },
+              { value: 'on', label: t('readOnly.optionOn') },
+              { value: 'off', label: t('readOnly.optionOff') },
+            ]}
+            testID={`server-read-only-${server.id}`}
+          />
           <View style={{ alignSelf: 'flex-end' }}>
             <Button label={t('servers.remove')} kind="ghost" compact onPress={() => setRemoving(server.id)} testID={`server-remove-${server.id}`} />
           </View>
         </View>
       ))}
+      {readOnlyChange.ui}
       <Button label={t('servers.add')} onPress={() => nav.push({ name: 'connect' })} testID="servers-add" />
       <ConfirmDialog
         visible={target !== undefined}
