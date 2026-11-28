@@ -51,7 +51,8 @@ export async function checkAllServers(deps: CheckDeps): Promise<{ result: CheckR
 
   for (const entry of servers) {
     const base = { server: { id: entry.id, name: entry.name } };
-    const client = await clientFor(entry, deps.secrets, deps.fetch);
+    // The background check only reads, so its client never writes.
+    const client = await clientFor(entry, deps.secrets, deps.fetch, true);
     if (!client) {
       results.push({ ...base, alerts: [], noKey: true });
       continue;

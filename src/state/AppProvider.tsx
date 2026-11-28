@@ -3,7 +3,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getLocales } from 'expo-localization';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { backgroundSupported, setBackgroundChecks } from '../alerts/background';
@@ -15,10 +15,13 @@ import {
   ACTIVE_KEY,
   addServer as addServerTo,
   clientFor,
+  effectiveReadOnly,
   loadServers,
   removeServer as removeServerFrom,
+  setServerReadOnly as setServerReadOnlyIn,
   type AddServerInput,
   type KeyValueStore,
+  type ReadOnlySetting,
   type ServerEntry,
 } from './servers';
 import { DEFAULT_SETTINGS, loadSettings, saveSettings, type Settings } from './settings';
@@ -34,6 +37,12 @@ export interface AppState {
   active: ServerEntry | null;
   /** Null while there is no server, or its key is missing (web, new session). */
   client: KeyHelpClient | null;
+  /**
+   * Read-only mode of the active server (its own setting or the global default). Screens hide
+   * every write action; the client refuses writes on its own as well.
+   */
+  readOnly: boolean;
+  setServerReadOnly(id: string, setting: ReadOnlySetting): Promise<void>;
   secretsPersistent: boolean;
   selectServer(id: string): void;
   addServer(input: AddServerInput): Promise<ServerEntry>;
@@ -60,6 +69,7 @@ export function AppProvider({ children, store = AsyncStorage, secrets = secretSt
   const [servers, setServers] = useState<ServerEntry[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [client, setClient] = useState<KeyHelpClient | null>(null);
+  const [keyRound, setKeyRound] = useState(0);
   const scheme = useColorScheme();
 
   useEffect(() => {
@@ -90,12 +100,18 @@ export function AppProvider({ children, store = AsyncStorage, secrets = secretSt
   }, [ready, hasServers, settings.backgroundChecks]);
 
   const active = useMemo(() => servers.find((s) => s.id === activeId) ?? null, [servers, activeId]);
+  const readOnly = effectiveReadOnly(active, settings.readOnlyDefault);
+  // The client asks this ref on every request, so a mode change applies at once without a new
+  // client (and without dropping the cached lists).
+  const readOnlyRef = useRef(readOnly);
+  readOnlyRef.current = readOnly;
+  const activeOrigin = active?.origin;
 
   useEffect(() => {
     let cancelled = false;
     setClient(null);
     if (!active) return undefined;
-    void clientFor(active, secrets)
+    void clientFor(active, secrets, undefined, () => readOnlyRef.current)
       .then((next) => {
         if (!cancelled) setClient(next);
       })
@@ -103,7 +119,9 @@ export function AppProvider({ children, store = AsyncStorage, secrets = secretSt
     return () => {
       cancelled = true;
     };
-  }, [active, secrets]);
+    // A new client only for another server or a new key, not when a setting of the entry changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, activeOrigin, keyRound, secrets]);
 
   const updateSettings = useCallback(
     (patch: Partial<Settings>) => {
@@ -128,10 +146,18 @@ export function AppProvider({ children, store = AsyncStorage, secrets = secretSt
     async (input: AddServerInput) => {
       const { entry, servers: next } = await addServerTo(input, { store, secrets });
       setServers(next);
+      setKeyRound((n) => n + 1);
       selectServer(entry.id);
       return entry;
     },
     [store, secrets, selectServer]
+  );
+
+  const setServerReadOnly = useCallback(
+    async (id: string, setting: ReadOnlySetting) => {
+      setServers(await setServerReadOnlyIn(id, setting, store));
+    },
+    [store]
   );
 
   const removeServer = useCallback(
@@ -165,6 +191,8 @@ export function AppProvider({ children, store = AsyncStorage, secrets = secretSt
     servers,
     active,
     client,
+    readOnly,
+    setServerReadOnly,
     secretsPersistent: secrets.persistent,
     selectServer,
     addServer,

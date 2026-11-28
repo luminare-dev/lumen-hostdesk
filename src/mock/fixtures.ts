@@ -7,6 +7,7 @@ import type {
   Certificate,
   Client,
   Database,
+  DnsSettings,
   Domain,
   EmailAccount,
   FtpUser,
@@ -34,6 +35,42 @@ export interface MockData {
   ftpUsers: FtpUser[];
   scheduledTasks: ScheduledTask[];
   backups: BackupOperation[];
+  /** DNS settings per main domain id. */
+  dns: Record<number, DnsSettings>;
+  /** How often POST /server/reboot was accepted. */
+  reboots: number;
+}
+
+/** The zone KeyHelp starts a main domain with (its default template, with example addresses). */
+export function defaultDns(): DnsSettings {
+  return {
+    is_custom_dns: false,
+    is_dns_disabled: false,
+    dkim_record: 'default._domainkey IN TXT ( "v=DKIM1; k=rsa; s=email; " "p=MOCKDKIMKEY" )',
+    records: {
+      soa: {
+        ttl: 86400,
+        primary_ns: 'ns1.example.net.',
+        rname: 'hostmaster.example.net.',
+        refresh: 14400,
+        retry: 1800,
+        expire: 604800,
+        minimum: 3600,
+      },
+      other: [
+        { host: '@', ttl: 86400, type: 'NS', value: 'ns1.example.net.' },
+        { host: '@', ttl: 86400, type: 'NS', value: 'ns2.example.net.' },
+        { host: '@', ttl: 86400, type: 'MX', value: '10 mail' },
+        { host: '@', ttl: 86400, type: 'TXT', value: 'v=spf1 a mx -all' },
+        { host: '_dmarc', ttl: 86400, type: 'TXT', value: 'v=DMARC1; p=none' },
+        { host: 'default._domainkey', ttl: 86400, type: 'TXT', value: '<DKIM_RECORD_VALUE>' },
+        { host: '@', ttl: 86400, type: 'A', value: '192.0.2.10' },
+        { host: '*', ttl: 86400, type: 'A', value: '192.0.2.10' },
+        { host: '@', ttl: 86400, type: 'AAAA', value: '2001:db8::10' },
+        { host: '*', ttl: 86400, type: 'AAAA', value: '2001:db8::10' },
+      ],
+    },
+  };
 }
 
 const days = (now: Date, n: number) => new Date(now.getTime() + n * 86_400_000).toISOString();
@@ -404,5 +441,8 @@ export function createFixtures(now: Date = new Date()): MockData {
     },
   ];
 
-  return { server, plans, clients, domains, certificates, emails, databases, ftpUsers, scheduledTasks, backups };
+  const dns: Record<number, DnsSettings> = {};
+  for (const domain of domains) if (!domain.is_subdomain) dns[domain.id] = defaultDns();
+
+  return { server, plans, clients, domains, certificates, emails, databases, ftpUsers, scheduledTasks, backups, dns, reboots: 0 };
 }

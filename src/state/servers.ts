@@ -12,6 +12,28 @@ export interface ServerEntry {
   /** https://host[:port] */
   origin: string;
   addedAt: string;
+  /** Read-only mode of this server; left out, the global default applies. */
+  readOnly?: boolean;
+}
+
+/** The read-only setting of a server: its own, or the global default. */
+export type ReadOnlySetting = 'default' | 'on' | 'off';
+
+export function readOnlySetting(entry: Pick<ServerEntry, 'readOnly'>): ReadOnlySetting {
+  return entry.readOnly === undefined ? 'default' : entry.readOnly ? 'on' : 'off';
+}
+
+/** Whether writes are blocked for a server; with no server, the global default. */
+export function effectiveReadOnly(entry: Pick<ServerEntry, 'readOnly'> | null | undefined, readOnlyDefault: boolean): boolean {
+  return entry?.readOnly ?? readOnlyDefault;
+}
+
+/**
+ * Whether a change of the read-only settings allows writes that were blocked before; that step
+ * needs the device owner's confirmation (biometrics or device code).
+ */
+export function unlocksWrites(before: boolean, after: boolean): boolean {
+  return before && !after;
 }
 
 export interface KeyValueStore {
@@ -26,7 +48,13 @@ export const ACTIVE_KEY = 'hostdesk.activeServer.v1';
 function isEntry(value: unknown): value is ServerEntry {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as Record<string, unknown>;
-  return typeof v.id === 'string' && typeof v.name === 'string' && typeof v.origin === 'string' && typeof v.addedAt === 'string';
+  return (
+    typeof v.id === 'string' &&
+    typeof v.name === 'string' &&
+    typeof v.origin === 'string' &&
+    typeof v.addedAt === 'string' &&
+    (v.readOnly === undefined || typeof v.readOnly === 'boolean')
+  );
 }
 
 export async function loadServers(store: KeyValueStore): Promise<ServerEntry[]> {
@@ -70,7 +98,7 @@ export async function addServer(input: AddServerInput, deps: AddServerDeps): Pro
   const origin = normalizeServerUrl(input.url);
   const apiKey = input.apiKey.trim();
   if (apiKey === '') throw new KeyHelpError('unauthorized', 'empty API key');
-  const client = new KeyHelpClient({ baseUrl: origin, apiKey, fetch: deps.fetch });
+  const client = new KeyHelpClient({ baseUrl: origin, apiKey, fetch: deps.fetch, readOnly: true });
   const pong = await client.ping();
   if (!pong) throw new KeyHelpError('invalidResponse', 'ping did not answer pong');
 
@@ -86,6 +114,19 @@ export async function addServer(input: AddServerInput, deps: AddServerDeps): Pro
   return { entry, servers: next };
 }
 
+/** Stores the read-only setting of one server ("default" removes its own value). */
+export async function setServerReadOnly(id: string, setting: ReadOnlySetting, store: KeyValueStore): Promise<ServerEntry[]> {
+  const servers = (await loadServers(store)).map((s) => {
+    if (s.id !== id) return s;
+    const next: ServerEntry = { ...s };
+    delete next.readOnly;
+    if (setting !== 'default') next.readOnly = setting === 'on';
+    return next;
+  });
+  await saveServers(store, servers);
+  return servers;
+}
+
 export async function removeServer(id: string, deps: { store: KeyValueStore; secrets: SecretStore }): Promise<ServerEntry[]> {
   const servers = (await loadServers(deps.store)).filter((s) => s.id !== id);
   await deps.secrets.remove(id);
@@ -94,8 +135,13 @@ export async function removeServer(id: string, deps: { store: KeyValueStore; sec
 }
 
 /** A client for a saved server, or null when its key is missing (web, after the session ended). */
-export async function clientFor(entry: ServerEntry, secrets: SecretStore, fetchImpl?: FetchLike): Promise<KeyHelpClient | null> {
+export async function clientFor(
+  entry: ServerEntry,
+  secrets: SecretStore,
+  fetchImpl?: FetchLike,
+  readOnly?: boolean | (() => boolean)
+): Promise<KeyHelpClient | null> {
   const apiKey = await secrets.get(entry.id);
   if (!apiKey) return null;
-  return new KeyHelpClient({ baseUrl: entry.origin, apiKey, fetch: fetchImpl });
+  return new KeyHelpClient({ baseUrl: entry.origin, apiKey, fetch: fetchImpl, readOnly });
 }

@@ -4,8 +4,8 @@
 // X-API-Key header. It is test code: it never talks to a network.
 
 import type { FetchLike } from '../api/client';
-import type { Client, Created, Database, Domain, EmailAccount } from '../api/types';
-import { createFixtures, MOCK_API_KEY, type MockData } from './fixtures';
+import type { Client, Created, Database, DnsRecord, DnsSoa, Domain, EmailAccount } from '../api/types';
+import { createFixtures, defaultDns, MOCK_API_KEY, type MockData } from './fixtures';
 
 export interface MockRequest {
   method: string;
@@ -125,6 +125,12 @@ export function createMockKeyHelp(options: MockOptions = {}): MockServer {
 
     if (method === 'GET' && path === '/ping') return json(200, { response: 'pong' });
     if (method === 'GET' && path === '/server') return json(200, data.server);
+    if (method === 'POST' && path === '/server/reboot') {
+      const input = parseBody(body);
+      if (input.confirm !== true) throw new HttpError(400, 'Invalid value for field "confirm".');
+      data.reboots += 1;
+      return json(202, undefined);
+    }
 
     if (resource === 'clients') {
       if (!id) {
@@ -176,6 +182,19 @@ export function createMockKeyHelp(options: MockOptions = {}): MockServer {
           });
         }
         if (!sub && method === 'GET') return json(200, client);
+        if (!sub && method === 'DELETE') {
+          // "Deletes a client account and all associated resources."
+          const own = <T extends { id_user?: number }>(items: T[]) => items.filter((i) => i.id_user !== client.id);
+          for (const d of data.domains) if (d.id_user === client.id) delete data.dns[d.id];
+          data.clients = data.clients.filter((c) => c.id !== client.id);
+          data.domains = own(data.domains);
+          data.emails = own(data.emails);
+          data.databases = own(data.databases);
+          data.ftpUsers = own(data.ftpUsers);
+          data.scheduledTasks = own(data.scheduledTasks);
+          data.certificates = own(data.certificates);
+          return json(204, undefined);
+        }
         if (!sub && method === 'PUT') {
           const input = parseBody(body);
           if (input.email !== undefined && !EMAIL.test(str(input.email))) {
@@ -223,11 +242,54 @@ export function createMockKeyHelp(options: MockOptions = {}): MockServer {
       } else {
         const domain = byId(data.domains, id, 'Domain');
         if (method === 'GET') return json(200, domain);
+        if (method === 'DELETE') {
+          // The mock removes the subdomains and the mailboxes on the domain with it.
+          const gone = new Set([domain.id, ...data.domains.filter((d) => d.id_parent_domain === domain.id).map((d) => d.id)]);
+          data.domains = data.domains.filter((d) => !gone.has(d.id));
+          data.emails = data.emails.filter((e) => e.id_domain === undefined || !gone.has(e.id_domain));
+          for (const g of gone) delete data.dns[g];
+          return json(204, undefined);
+        }
         if (method === 'PUT') {
           const input = parseBody(body);
           if (typeof input.is_disabled === 'boolean') domain.is_disabled = input.is_disabled;
           return json(200, { id: domain.id });
         }
+      }
+    }
+
+    if (resource === 'dns' && id && !sub) {
+      const domain = byId(data.domains, id, 'Domain');
+      // Only main domains have DNS settings; a subdomain id answers 404.
+      if (domain.is_subdomain || !data.dns[domain.id]) throw new HttpError(404, 'Domain not found.');
+      if (method === 'GET') return json(200, data.dns[domain.id]);
+      if (method === 'DELETE') {
+        data.dns[domain.id] = defaultDns();
+        return json(204, undefined);
+      }
+      if (method === 'PUT') {
+        const input = parseBody(body);
+        if (typeof input.is_dns_disabled === 'boolean') {
+          data.dns[domain.id] = { ...defaultDns(), is_custom_dns: input.is_dns_disabled, is_dns_disabled: input.is_dns_disabled };
+          return json(200, { id: domain.id });
+        }
+        const records = input.records as { soa?: unknown; other?: unknown } | undefined;
+        if (typeof records !== 'object' || records === null || !Array.isArray(records.other)) {
+          throw new HttpError(400, 'Invalid value for field "records".');
+        }
+        const other: DnsRecord[] = records.other.map((raw: unknown, index: number) => {
+          const r = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
+          const ttl = r.ttl === undefined ? 86400 : r.ttl;
+          if (typeof r.host !== 'string' || r.host.trim() === '' || typeof r.type !== 'string' || typeof r.value !== 'string' || r.value.trim() === '') {
+            throw new HttpError(400, `Invalid value for field "records.other.${index}".`);
+          }
+          if (typeof ttl !== 'number' || !Number.isInteger(ttl) || ttl < 1) throw new HttpError(400, `Invalid value for field "records.other.${index}.ttl".`);
+          return { host: r.host, ttl, type: r.type.toUpperCase(), value: r.value };
+        });
+        const current = data.dns[domain.id];
+        const soa = typeof records.soa === 'object' && records.soa !== null ? { ...current.records?.soa, ...(records.soa as object) } : current.records?.soa;
+        data.dns[domain.id] = { ...current, is_custom_dns: true, is_dns_disabled: false, records: { soa: soa as DnsSoa | undefined, other } };
+        return json(200, { id: domain.id });
       }
     }
 
@@ -266,6 +328,10 @@ export function createMockKeyHelp(options: MockOptions = {}): MockServer {
       } else {
         const account = byId(data.emails, id, 'Email account');
         if (method === 'GET') return json(200, account);
+        if (method === 'DELETE') {
+          data.emails = data.emails.filter((e) => e.id !== account.id);
+          return json(204, undefined);
+        }
         if (method === 'PUT') {
           const input = parseBody(body);
           const answer: Created = { id: account.id };
@@ -281,6 +347,14 @@ export function createMockKeyHelp(options: MockOptions = {}): MockServer {
 
     if (resource === 'databases') {
       if (!id && method === 'GET') return json(200, sortList(data.databases, query));
+      if (id && !sub) {
+        const database = byId(data.databases, id, 'Database');
+        if (method === 'GET') return json(200, database);
+        if (method === 'DELETE') {
+          data.databases = data.databases.filter((d) => d.id !== database.id);
+          return json(204, undefined);
+        }
+      }
       if (!id && method === 'POST') {
         const input = parseBody(body);
         if (!userExists(input.id_user)) throw new HttpError(400, 'Invalid value for field "id_user".');

@@ -63,6 +63,7 @@ export const en = {
   'error.badRequest': 'The server rejected the input: {message}',
   'error.server': 'The server reported an error. If it is just reloading its web server, try again in a few seconds.',
   'error.invalidResponse': 'The answer was not what the KeyHelp API documents. Is this a KeyHelp panel?',
+  'error.readOnly': 'Read-only mode is on for this server, so the app did not send the change.',
   'error.title': 'Something went wrong',
   'error.details': 'Details: {message}',
 

@@ -20,7 +20,9 @@ export type ErrorKind =
   /** 5xx, also while the server reloads its web server after a change. */
   | 'server'
   /** The answer is not the JSON the endpoint documents. */
-  | 'invalidResponse';
+  | 'invalidResponse'
+  /** A write was stopped in the app because the server is in read-only mode; nothing was sent. */
+  | 'readOnly';
 
 export class KeyHelpError extends Error {
   readonly kind: ErrorKind;

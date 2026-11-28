@@ -271,6 +271,35 @@ export interface Created {
   database_username?: string;
 }
 
+/** One record of a domain's zone, as GET and PUT /dns/{id} carry it (zone-file notation). */
+export interface DnsRecord {
+  /** Relative to the domain: "@", "*", "www", "_sip._tcp". */
+  host: string;
+  ttl: number;
+  /** "A", "AAAA", "CNAME", "MX", "TXT", "SRV", "CAA", "NS", … */
+  type: string;
+  /** As in a zone file: "10 mail" for MX, "0 issue \"letsencrypt.org\"" for CAA. */
+  value: string;
+}
+
+export interface DnsSoa {
+  ttl: number;
+  primary_ns: string;
+  rname: string;
+  refresh: number;
+  retry: number;
+  expire: number;
+  minimum: number;
+}
+
+/** GET /dns/{id}: the DNS settings of a main domain. */
+export interface DnsSettings {
+  is_custom_dns?: boolean;
+  is_dns_disabled?: boolean;
+  dkim_record?: string;
+  records?: { soa?: DnsSoa; other?: DnsRecord[] };
+}
+
 /** The error body the API sends with 4xx answers. */
 export interface ApiErrorBody {
   code: string;

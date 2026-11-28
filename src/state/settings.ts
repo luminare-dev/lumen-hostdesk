@@ -1,4 +1,5 @@
-// App settings: language, appearance, the Lumen tokens and the alert thresholds. Stored as one
+// App settings: language, appearance, the Lumen tokens, the alert thresholds and the read-only
+// default. Stored as one
 // JSON document; anything unreadable falls back to the default, value by value.
 
 import { DEFAULT_THRESHOLDS, type Thresholds } from '../alerts/evaluate';
@@ -17,6 +18,8 @@ export interface Settings {
   customTokens: unknown;
   thresholds: Thresholds;
   backgroundChecks: boolean;
+  /** Read-only mode for servers that have no setting of their own. */
+  readOnlyDefault: boolean;
 }
 
 export const SETTINGS_KEY = 'hostdesk.settings.v1';
@@ -28,6 +31,7 @@ export const DEFAULT_SETTINGS: Settings = {
   customTokens: null,
   thresholds: DEFAULT_THRESHOLDS,
   backgroundChecks: true,
+  readOnlyDefault: false,
 };
 
 const oneOf = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T =>
@@ -57,6 +61,7 @@ export function sanitizeSettings(input: unknown): Settings {
       backups: bool(th.backups, d.backups),
     },
     backgroundChecks: bool(src.backgroundChecks, DEFAULT_SETTINGS.backgroundChecks),
+    readOnlyDefault: bool(src.readOnlyDefault, DEFAULT_SETTINGS.readOnlyDefault),
   };
 }
 

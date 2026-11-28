@@ -65,6 +65,7 @@ export const de: Record<keyof typeof en, string> = {
   'error.badRequest': 'Der Server hat die Eingabe abgelehnt: {message}',
   'error.server': 'Der Server meldet einen Fehler. Lädt er nur seinen Webserver neu, versuche es in ein paar Sekunden erneut.',
   'error.invalidResponse': 'Die Antwort entspricht nicht der dokumentierten KeyHelp-API. Ist das ein KeyHelp-Panel?',
+  'error.readOnly': 'Für diesen Server ist der Nur-Lesen-Modus an, deshalb hat die App die Änderung nicht gesendet.',
   'error.title': 'Etwas ist schiefgelaufen',
   'error.details': 'Details: {message}',
 
