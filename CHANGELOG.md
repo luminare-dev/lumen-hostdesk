@@ -8,6 +8,14 @@ the Conventional Commit titles of the merged pull requests; do not edit entries 
 <!-- release-please inserts each new release above the first line that starts with "## ["
      (or "## " and a digit). Keep the "Origin" entry below as the last entry of this file. -->
 
+## [0.2.0](https://github.com/luminare-dev/lumen-hostdesk/compare/v0.1.0...v0.2.0) (2026-11-28)
+
+
+### Added
+
+* add typed-confirmation deletes, reboot, DNS editor and read-only mode ([44dafdc](https://github.com/luminare-dev/lumen-hostdesk/commit/44dafdcc51775d41fb0e2a7ba73bcd66b5e6d583))
+* **api:** add deletes, reboot, DNS records and a read-only guard ([4906c6a](https://github.com/luminare-dev/lumen-hostdesk/commit/4906c6a4b49ea0fb1fea4537581ae8e5e45db90c))
+
 ## 0.1.0 (2026-11-27)
 
 
