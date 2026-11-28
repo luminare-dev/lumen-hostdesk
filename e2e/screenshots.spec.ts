@@ -48,6 +48,35 @@ for (const scheme of ['dark', 'light'] as const) {
 
       await page.getByTestId('tab-settings').click();
       await shot('settings');
+
+      // The write flows: typed confirmation, DNS editor, read-only badge.
+      await page.getByTestId('tab-resources').click();
+      await page.getByTestId('tab-resources').click();
+      await page.getByTestId('resource-domains').click();
+      await page.getByTestId('row-domains-10').click();
+      await page.getByTestId('domain-dns').click();
+      await expect(page.getByTestId('dns-record-0')).toBeVisible();
+      await shot('dns');
+      await page.getByTestId('dns-add').click();
+      await page.getByTestId('dns-type-MX').click();
+      await page.getByTestId('dns-host').fill('@');
+      await page.getByTestId('dns-value').fill('mail.example.net.');
+      await expect(page.getByTestId('dns-issue')).toBeVisible();
+      await shot('dns-record');
+      await page.getByTestId('tab-resources').click();
+      await page.getByTestId('resource-clients').click();
+      await page.getByTestId('row-clients-2').click();
+      await page.getByTestId('client-delete').click();
+      await page.getByTestId('confirm-typed').fill('atel');
+      await shot('delete');
+      await page.getByTestId('confirm-cancel').click();
+
+      await page.getByTestId('tab-settings').click();
+      await page.getByTestId('settings-servers').click();
+      await page.locator('[data-testid^="server-read-only-"][data-testid$="-on"]').first().click();
+      await page.getByTestId('tab-dashboard').click();
+      await expect(page.getByTestId('read-only-badge')).toBeVisible();
+      await shot('read-only');
     });
   });
 }
