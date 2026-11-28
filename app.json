@@ -46,6 +46,12 @@
     },
     "plugins": [
       "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow $(PRODUCT_NAME) to confirm turning off read-only mode with Face ID."
+        }
+      ],
       "expo-background-task",
       "expo-localization",
       [
