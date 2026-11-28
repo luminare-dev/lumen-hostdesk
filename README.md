@@ -34,6 +34,9 @@ works with; KeyHelp is a registered trademark of Keyweb AG.
 | ![Client detail, dark](docs/screenshots/client-dark.png) | ![Client detail, light](docs/screenshots/client-light.png) |
 | ![Alerts, dark](docs/screenshots/alerts-dark.png) | ![Alerts, light](docs/screenshots/alerts-light.png) |
 | ![Confirmation before a password reset, dark](docs/screenshots/confirm-dark.png) | ![Confirmation before a password reset, light](docs/screenshots/confirm-light.png) |
+| ![Typed confirmation before deleting a client, dark](docs/screenshots/delete-dark.png) | ![Typed confirmation before deleting a client, light](docs/screenshots/delete-light.png) |
+| ![DNS records of a domain, dark](docs/screenshots/dns-dark.png) | ![DNS records of a domain, light](docs/screenshots/dns-light.png) |
+| ![Server status in read-only mode, dark](docs/screenshots/read-only-dark.png) | ![Server status in read-only mode, light](docs/screenshots/read-only-light.png) |
 | ![Settings, dark](docs/screenshots/settings-dark.png) | ![Settings, light](docs/screenshots/settings-light.png) |
 
 Screenshots from CI (the `screenshots` artifact of the `ci` workflow): the web build at phone
