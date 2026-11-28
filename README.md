@@ -53,6 +53,15 @@ size against the mock API, with invented data.
 - **Actions**: create and edit clients, disable and enable clients and domains, create domains,
   e-mail accounts and databases, reset mailbox passwords. Disruptive actions ask first; passwords
   and names the server generates are shown once and never stored.
+- **Deletes and reboot with typed confirmation**: delete clients (the dialog counts the domains,
+  mailboxes and databases that go with them), domains, mailboxes and databases, or reboot the
+  server; the button stays disabled until the exact name, address or host name is typed.
+- **DNS editor** per main domain: list, add, edit and delete A, AAAA, CNAME, MX, TXT, SRV, CAA and
+  NS records with checks per type and TTL, edit the SOA, reset to the KeyHelp defaults. NS and
+  SOA changes come with a warning.
+- **Read-only mode** per server, with a global default: every write action is hidden, a badge
+  shows the mode, and the API client refuses writes on its own. Turning it off asks for the
+  device's biometrics or code where one is set up.
 - **Alerts**: expiring or expired certificates, disk, inodes, memory, offline services, full
   mailboxes and failed backups, with your own thresholds. A background check on Android and iOS
   notifies you of new problems; no server of ours is involved ([limits](docs/alerts.md)).
@@ -71,6 +80,8 @@ The endpoints used, and the ones not used, are listed in [docs/api.md](docs/api.
   mainly a preview and the test target.
 - Only `https://` addresses are accepted, redirects are refused, and certificate errors are not
   skipped.
+- Read-only mode blocks writes in the app, not on the server: for a key that must never change
+  anything, rely on the panel's own key permissions as well.
 - Create a dedicated API key in KeyHelp (*Configuration → API*) and restrict it to the IP
   addresses you connect from. Treat it like an admin password: with the key and network access,
   the server can be changed.
